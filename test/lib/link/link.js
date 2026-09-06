@@ -13,6 +13,30 @@ describe("lib/link/link", function() {
 		err.stack = message;
 		throw err;
 	}
+	function throwInvalid(message, errors) {
+		let err = new lib.InvalidMessage(message, errors);
+		err.stack = message;
+		throw err;
+	}
+	function throwStackless(message) {
+		let err = new lib.InvalidMessage(message);
+		err.stack = undefined;
+		throw err;
+	}
+	// Collect lib.logger.error calls made while fn runs and its rejections settle.
+	async function captureErrors(fn) {
+		const logged = [];
+		const originalError = lib.logger.error;
+		lib.logger.error = msg => { logged.push(msg); };
+		try {
+			fn();
+			await new Promise(r => setImmediate(r));
+		} finally {
+			lib.logger.error = originalError;
+		}
+		return logged;
+	}
+	const validationErrors = [{ instancePath: "", message: "must be number" }];
 
 	describe("class Link", function() {
 		let testConnector;
@@ -409,9 +433,29 @@ describe("lib/link/link", function() {
 				testConnector.emit("message", new lib.MessageEvent(1, dst, src, "NumberEvent", 9));
 				assert.deepEqual(value, 9);
 			});
-			it("should log errors from event handler", function() {
-				testLink.handle(SimpleEvent, async () => { throwSimple("Error"); });
-				testConnector.emit("message", new lib.MessageEvent(1, dst, src, "SimpleEvent"));
+			it("should log errors from event handler", async function() {
+				const logged = await captureErrors(() => {
+					testLink.handle(SimpleEvent, async () => { throwSimple("Error"); });
+					testConnector.emit("message", new lib.MessageEvent(1, dst, src, "SimpleEvent"));
+				});
+				assert.deepEqual(logged, ["Unexpected error handling SimpleEvent:\nError"]);
+			});
+			it("should log validation errors from event handler", async function() {
+				const logged = await captureErrors(() => {
+					testLink.handle(SimpleEvent, async () => { throwInvalid("Invalid", validationErrors); });
+					testConnector.emit("message", new lib.MessageEvent(1, dst, src, "SimpleEvent"));
+				});
+				assert.deepEqual(logged, [
+					"Unexpected error handling SimpleEvent:\nInvalid",
+					JSON.stringify(validationErrors, null, "\t"),
+				]);
+			});
+			it("should log message when event handler error has no stack", async function() {
+				const logged = await captureErrors(() => {
+					testLink.handle(SimpleEvent, async () => { throwStackless("Invalid"); });
+					testConnector.emit("message", new lib.MessageEvent(1, dst, src, "SimpleEvent"));
+				});
+				assert.deepEqual(logged, ["Unexpected error handling SimpleEvent:\nInvalid"]);
 			});
 			it("should throw on unknown type", function() {
 				assert.throws(
@@ -591,9 +635,32 @@ describe("lib/link/link", function() {
 				testConnector.emit("message", new lib.MessageEvent(1, dst, src, "SimpleEvent"));
 				assert(handled, "event was not handled");
 			});
-			it("should log errors from snoop handler", function() {
-				testLink.snoopEvent(SimpleEvent, async () => { throwSimple("Error"); });
-				testConnector.emit("message", new lib.MessageEvent(1, dst, src, "SimpleEvent"));
+			it("should log errors from snoop handler", async function() {
+				testLink.handle(SimpleEvent, async () => {});
+				const logged = await captureErrors(() => {
+					testLink.snoopEvent(SimpleEvent, async () => { throwSimple("Error"); });
+					testConnector.emit("message", new lib.MessageEvent(1, dst, src, "SimpleEvent"));
+				});
+				assert.deepEqual(logged, ["Unexpected error snooping SimpleEvent:\nError"]);
+			});
+			it("should log validation errors from snoop handler", async function() {
+				testLink.handle(SimpleEvent, async () => {});
+				const logged = await captureErrors(() => {
+					testLink.snoopEvent(SimpleEvent, async () => { throwInvalid("Invalid", validationErrors); });
+					testConnector.emit("message", new lib.MessageEvent(1, dst, src, "SimpleEvent"));
+				});
+				assert.deepEqual(logged, [
+					"Unexpected error snooping SimpleEvent:\nInvalid",
+					JSON.stringify(validationErrors, null, "\t"),
+				]);
+			});
+			it("should log message when snoop handler error has no stack", async function() {
+				testLink.handle(SimpleEvent, async () => {});
+				const logged = await captureErrors(() => {
+					testLink.snoopEvent(SimpleEvent, async () => { throwStackless("Invalid"); });
+					testConnector.emit("message", new lib.MessageEvent(1, dst, src, "SimpleEvent"));
+				});
+				assert.deepEqual(logged, ["Unexpected error snooping SimpleEvent:\nInvalid"]);
 			});
 			it("should throw on double registration", function() {
 				testLink.snoopEvent(SimpleEvent);
