@@ -80,6 +80,8 @@ export interface InputComponentProps {
 export type InputComponent = React.ComponentType<InputComponentProps>;
 
 export type ExtensionSlotProps = {
+	/** Placed at the end of the overview page. */
+	OverviewPage: Record<never, never>;
 	/** Placed at the end of the controller page. */
 	ControllerPage: Record<never, never>;
 	/** Placed at the end of the hosts list page. */
