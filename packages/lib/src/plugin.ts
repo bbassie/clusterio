@@ -142,7 +142,7 @@ export async function loadPlugin<
 
 	// migrate: accept plugins which export classes
 	if (module[exportName]) {
-		logger.warn(`Plugin ${pluginInfo.name} is using deprecated class export`);
+		pluginContext.logger.warn(`Plugin ${pluginInfo.name} is using deprecated class export`);
 		await loadPluginClass(pluginInfo, pluginType, pluginContext, module, exportName, baseClass);
 		return;
 	}
