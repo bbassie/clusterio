@@ -165,6 +165,7 @@ export class MockController {
 			["controller.public_url", "test"],
 			["controller.auth_secret", "TestSecretDoNotUse"],
 			["controller.proxy_stream_timeout", 1],
+			["controller.metrics_timeout", 1],
 		]);
 		this.config = {
 			get: (name) => {
@@ -199,6 +200,7 @@ export class MockController {
 		this.handles = new Map();
 		this.hooks = new ControllerHooks(new MockLogger());
 		this.loadedPlugins = new Set();
+		this.wsServer = { hostConnections: new Map() };
 	}
 
 	get authSecret() {
