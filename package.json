@@ -12,19 +12,20 @@
 		"silent-test": "SILENT_TEST=y pnpm test",
 		"fast-test": "FAST_TEST=y pnpm test",
 		"no-external-test": "NO_EXTERNAL_TEST=y pnpm test",
-		"cover": "nyc pnpm test",
-		"fast-cover": "FAST_TEST=y nyc pnpm test",
-		"ci-cover": "nyc --reporter=lcovonly pnpm test",
+		"cover": "c8 pnpm test",
+		"fast-cover": "FAST_TEST=y c8 pnpm test",
+		"ci-cover": "c8 --reporter=lcovonly pnpm test",
 		"lint": "eslint packages plugins test",
 		"lint-fix": "eslint --fix packages plugins test",
 		"clean": "node ./clean.js",
 		"docs": "typedoc",
 		"bundle-dependencies": "bundle-dependencies"
 	},
-	"nyc": {
+	"c8": {
 		"exclude": [
 			"test/**",
-			"plugins/*/test/**"
+			"plugins/*/test/**",
+			"temp/**"
 		]
 	},
 	"engines": {
@@ -49,6 +50,7 @@
 		"@types/node": "catalog:",
 		"@typescript-eslint/eslint-plugin": "^8.38.0",
 		"@typescript-eslint/parser": "^8.38.0",
+		"c8": "^12.0.0",
 		"eslint": "^9.32.0",
 		"eslint-plugin-node": "^11.1.0",
 		"express": "^5.1.0",
@@ -57,7 +59,6 @@
 		"jsonwebtoken": "^9.0.2",
 		"jszip": "^3.10.1",
 		"mocha": "^11.7.1",
-		"nyc": "^17.1.0",
 		"typedoc": "^0.28.9",
 		"typescript": "^5.9.2",
 		"yargs": "^18.0.0"
