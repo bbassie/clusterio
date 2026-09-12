@@ -282,12 +282,13 @@ The controller exports metrics for the whole cluster on the `/metrics` endpoint.
 Fetching it requires a token for a user with the `core.controller.metrics` permission, sent either as an `Authorization: Bearer <token>` header or as an `X-Access-Token` header.
 Requests without a valid token get a 401 response and requests for users lacking the permission get a 403 response.
 
-Create a role with just this permission, a user to hold it, and generate a token for that user:
+Create a role with just this permission, a user to hold it, and generate a token for that user.
+Give the user a name that is not a valid Factorio player name, such as one starting with `#`, so a player joining the cluster can never claim the account and its token:
 
     ctl> role create Prometheus --permissions core.controller.metrics
-    ctl> user create prometheus
-    ctl> user set-roles prometheus Prometheus
-    $ npx clusteriocontroller bootstrap generate-user-token prometheus
+    ctl> user create #prometheus
+    ctl> user set-roles #prometheus Prometheus
+    $ npx clusteriocontroller bootstrap generate-user-token '#prometheus'
 
 Then pass the token in the scrape job for the controller in `prometheus.yml`:
 
