@@ -36,9 +36,11 @@ catalog:
 
 catalogMode: strict
 
+autoInstallPeers: false
+
 linkWorkspacePackages: true
 
-onlyBuiltDependencies:
-  - '@swc/core'
+allowBuilds:
+  '@swc/core': true
 
 shellEmulator: true
