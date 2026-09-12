@@ -96,6 +96,7 @@ jobs:
     - uses: ./.github/actions/pnpm-install
       with:
         node-version: ${{ env.NODE_VERSION }}
+        ignore-scripts: true
     - run: pnpm run lint
 
   build:
@@ -106,6 +107,7 @@ jobs:
     - uses: ./.github/actions/pnpm-install
       with:
         node-version: ${{ env.NODE_VERSION }}
+        ignore-scripts: true
     - run: pnpm run build-mod
     # Upload build to artifacts
     - name: Upload build to artifacts

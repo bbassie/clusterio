@@ -1,10 +1,13 @@
 name: Install dependencies
-description: Set up pnpm and Node.js, restore the pnpm store from the cache and run pnpm install
+description: Set up pnpm and Node.js, restore caches and run pnpm install
 
 inputs:
   node-version:
     description: Node.js version passed to actions/setup-node
     required: true
+  ignore-scripts:
+    description: Skip the prepare scripts that build the workspace packages
+    default: "false"
 
 runs:
   using: composite
@@ -28,8 +31,22 @@ runs:
         key: pnpm-store-${{ runner.os }}-${{ steps.store.outputs.week }}-${{ hashFiles('**/package.json', 'pnpm-workspace.yaml') }}
         restore-keys: pnpm-store-${{ runner.os }}-
 
+    # The prepare scripts run tsc --build and webpack, both incremental when
+    # their previous output is present. Every run saves its output and the
+    # next run starts from the most recent one.
+    - if: inputs.ignore-scripts != 'true'
+      uses: actions/cache@v6
+      with:
+        path: |
+          packages/*/dist
+          plugins/*/dist
+          packages/*/node_modules/.cache
+          plugins/*/node_modules/.cache
+        key: build-${{ runner.os }}-${{ github.sha }}
+        restore-keys: build-${{ runner.os }}-
+
     - shell: bash
-      run: pnpm i --no-frozen-lockfile
+      run: pnpm i --no-frozen-lockfile ${{ inputs.ignore-scripts == 'true' && '--ignore-scripts' || '' }}
     # Drop packages the restored store had but this install did not use, so
     # the snapshot does not grow with every version bump.
     - shell: bash
