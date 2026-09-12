@@ -1,12 +1,11 @@
-"use strict";
-const assert = require("assert").strict;
-const events = require("events");
-const FormData = require("form-data");
-const http = require("http");
+import assert from "node:assert/strict";
+import events from "node:events";
+import FormData from "form-data";
+import http from "node:http";
 
-const { wait } = require("@clusterio/lib");
-const routes = require("@clusterio/controller/dist/node/src/routes");
-const mock = require("../mock");
+import { wait } from "@clusterio/lib";
+import * as routes from "@clusterio/controller/dist/node/src/routes.js";
+import * as mock from "../mock.js";
 
 describe("controller/src/routes", function() {
 	let controller;
@@ -86,7 +85,6 @@ describe("controller/src/routes", function() {
 		let endpoint;
 		beforeEach(function() {
 			endpoint = `http://localhost:${port}/api/plugins`;
-			controller.plugins = new Map([["foo", {}]]);
 			controller.mockConfigEntries.set("foo.load_plugin", true);
 		});
 		it("should strip static/ from the plugin bundle path", async function() {
@@ -94,6 +92,7 @@ describe("controller/src/routes", function() {
 				name: "foo", version: "1.0.0", npmPackage: "foo",
 				manifest: { "foo.js": "static/foo.abc.js" },
 			}];
+			controller.loadedPlugins = new Set(controller.pluginInfos);
 			let response = await fetch(endpoint);
 			assert.equal(response.status, 200);
 			assert.deepEqual(await response.json(), [{
@@ -103,10 +102,11 @@ describe("controller/src/routes", function() {
 		});
 		it("should report missing manifest and entrypoint", async function() {
 			controller.pluginInfos = [
-				{ name: "foo", version: "1.0.0", npmPackage: "foo" },
+				{ name: "foo", version: "1.0.0", npmPackage: "foo", webEntrypoint: "dist/web/index.js" },
 				{ name: "bar", version: "1.0.0", npmPackage: "bar", manifest: {} },
 				{ name: "baz", version: "1.0.0", npmPackage: "baz", manifest: { "baz.js": "remoteEntry.js" } },
 			];
+			controller.loadedPlugins = new Set([controller.pluginInfos[0]]);
 			let response = await fetch(endpoint);
 			assert.equal(response.status, 200);
 			let data = await response.json();
@@ -115,6 +115,19 @@ describe("controller/src/routes", function() {
 			assert.equal(data[2].web.error, "Incompatible old remoteEntry.js entrypoint.");
 			assert.equal(data[1].loaded, false);
 			assert.equal(data[1].enabled, false);
+		});
+		it("should not report a missing manifest for plugins without a web build", async function() {
+			controller.pluginInfos = [
+				{ name: "foo", version: "1.0.0", npmPackage: "foo", hostEntrypoint: "dist/node/host.js" },
+				{ name: "bar", version: "1.0.0", npmPackage: "bar", controllerEntrypoint: "dist/node/controller.js" },
+				{ name: "baz", version: "1.0.0", npmPackage: "baz", instanceConfigFields: {} },
+			];
+			let response = await fetch(endpoint);
+			assert.equal(response.status, 200);
+			let data = await response.json();
+			assert.deepEqual(data[0].web, {});
+			assert.equal(data[1].web.error, "Missing dist/web/manifest.json");
+			assert.equal(data[2].web.error, "Missing dist/web/manifest.json");
 		});
 	});
 	describe("/api/cluster-name", function() {

@@ -1,11 +1,10 @@
-"use strict";
-const assert = require("assert").strict;
-const fs = require("node:fs/promises");
-const JSZip = require("jszip");
-const path = require("path");
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import JSZip from "jszip";
+import path from "node:path";
 
-const lib = require("@clusterio/lib");
-const patch = require("@clusterio/host/dist/node/src/patch");
+import * as lib from "@clusterio/lib";
+import * as patch from "@clusterio/host/dist/node/src/patch.js";
 
 
 describe("host/patch", function() {
@@ -253,21 +252,11 @@ describe("host/patch", function() {
 			await fs.writeFile(path.join(pluginDir, "package.json"), "{}");
 			await fs.writeFile(path.join(pluginDir, "module", "module.json"), "{}");
 			await assert.rejects(
-				patch.loadModules([{ name: "clusterio", version: "1.0.0", requirePath: path.resolve(pluginDir) }]),
+				patch.loadModules([{
+					name: "clusterio", version: "1.0.0", packagePath: path.resolve(pluginDir, "package.json"),
+				}]),
 				new Error("Module with name clusterio already exists in a plugin")
 			);
-		});
-	});
-
-	describe("class SaveModule", function() {
-		describe("static fromPlugin()", function() {
-			it("should load the module of the plugin", async function() {
-				const [info] = await lib.loadPluginInfos(
-					new Map([["research_sync", path.resolve("plugins/research_sync")]])
-				);
-				const pluginModule = await patch.SaveModule.fromPlugin({ info });
-				assert.equal(pluginModule.info.name, "research_sync");
-			});
 		});
 	});
 

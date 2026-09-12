@@ -1,14 +1,13 @@
-"use strict";
-const assert = require("assert").strict;
-const fs = require("node:fs/promises");
-const JSZip = require("jszip");
-const path = require("path");
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import JSZip from "jszip";
+import path from "node:path";
 
-const lib = require("@clusterio/lib");
-const {
+import * as lib from "@clusterio/lib";
+import {
 	createScenario, createScenarioCommand, handleCreateScenarioCommand,
-} = require("@clusterio/host/dist/node/src/create_scenario");
-const { SaveModule, PatchInfo } = require("@clusterio/host/dist/node/src/patch");
+} from "@clusterio/host/dist/node/src/create_scenario.js";
+import { SaveModule, PatchInfo } from "@clusterio/host/dist/node/src/patch.js";
 
 
 describe("host/create_scenario", function() {
@@ -71,6 +70,19 @@ describe("host/create_scenario", function() {
 		checkOutput(await readDir(output));
 	});
 
+	it("should write a zip file when asked to", async function() {
+		const output = path.join(tempDir, "zipped.zip");
+		await createScenario(path.join(tempDir, "scenario"), output, [module], true);
+		const zip = await JSZip.loadAsync(await fs.readFile(output));
+		const files = new Map();
+		for (const file of Object.values(zip.files)) {
+			if (!file.dir) {
+				files.set(file.name.replace(/^scenario\//, ""), await file.async("string"));
+			}
+		}
+		checkOutput(files);
+	});
+
 	it("should not modify the input scenario", async function() {
 		const files = await readDir(path.join(tempDir, "scenario"));
 		assert.deepEqual(files, scenarioFiles);
@@ -103,7 +115,7 @@ describe("host/create_scenario", function() {
 			};
 			createScenarioCommand(yargs);
 			assert.deepEqual(positionals, ["output"]);
-			assert.deepEqual(options, ["scenario", "factorio-version", "plugins"]);
+			assert.deepEqual(options, ["zip", "scenario", "factorio-version", "plugins"]);
 		});
 	});
 

@@ -1,5 +1,5 @@
 import type { Application, Request, Response } from "express";
-import Controller from "./Controller";
+import Controller from "./Controller.js";
 
 import busboy from "busboy";
 import crypto from "crypto";
@@ -12,7 +12,7 @@ import nodeStream from "stream";
 import util from "util";
 
 import * as lib from "@clusterio/lib";
-const { logger } = lib;
+import { logger } from "@clusterio/lib";
 
 const finished = util.promisify(nodeStream.finished);
 
@@ -49,7 +49,7 @@ async function getMetrics(req: Request, res: Response, next: any) {
 	const controller: Controller = req.app.locals.controller;
 
 	let results: lib.CollectorResult[] = [];
-	let pluginResults = await lib.invokeHook(controller.plugins, "onMetrics");
+	let pluginResults = await controller.hooks.metrics.collect();
 	for (let metricIterator of pluginResults) {
 		for await (let metric of metricIterator) {
 			results.push(metric);
@@ -117,8 +117,8 @@ function getPlugins(req: Request, res: Response) {
 	let plugins: lib.PluginWebApi[] = [];
 	for (let pluginInfo of req.app.locals.controller.pluginInfos) {
 		let name = pluginInfo.name;
-		let loaded = req.app.locals.controller.plugins.has(name);
-		let enabled = loaded && req.app.locals.controller.config.get(`${pluginInfo.name}.load_plugin`);
+		const loaded = req.app.locals.controller.loadedPlugins.has(pluginInfo);
+		const enabled = loaded && req.app.locals.controller.config.get(`${pluginInfo.name}.load_plugin`);
 		// Note: Cast through unknown is needed because load_plugin is
 		// defined at runtime and no other fields in the controller config
 		// currently have the boolean type.
@@ -126,13 +126,13 @@ function getPlugins(req: Request, res: Response) {
 		let devPlugins = req.app.locals.devPlugins;
 		if (devPlugins && devPlugins.has(name)) {
 			let stats = res.locals.webpack.devMiddleware.stats.stats[devPlugins.get(name)!];
-			web.main = stats.toJson().assetsByChunkName[name];
+			web.main = stats.toJson().assetsByChunkName[name][0];
 		} else if (pluginInfo.manifest) {
 			web.main = pluginInfo.manifest[`${pluginInfo.name}.js`];
 			if (!web.main) {
 				web.error = `Missing ${pluginInfo.name}.js entry in manifest.json`;
 			}
-		} else {
+		} else if (lib.pluginNeedsWebBuild(pluginInfo)) {
 			web.error = "Missing dist/web/manifest.json";
 		}
 		if (web.main === "remoteEntry.js") {

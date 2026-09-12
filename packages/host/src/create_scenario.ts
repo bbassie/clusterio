@@ -7,24 +7,35 @@ import path from "path";
 import * as lib from "@clusterio/lib";
 import { logger } from "@clusterio/lib";
 
-import { loadModules, patch, SaveModule } from "./patch";
-import { findVersion } from "./server";
+import { loadModules, patch, SaveModule } from "./patch.js";
+import { findVersion } from "./server.js";
 
 
 /**
  * Create a scenario patched with the given modules
  *
  * Runs the save patching on the scenario at scenarioPath and writes the
- * result to the directory at outputPath.  The scenario can be a directory,
- * a zipped scenario or a save.
+ * result to outputPath.  The scenario can be a directory, a zipped
+ * scenario or a save.
  *
  * @param scenarioPath - Path to the scenario to patch.
- * @param outputPath - Directory to write the patched scenario to.
+ * @param outputPath - Path to write the patched scenario to.
  * @param modules - Description of the modules to patch.
+ * @param zip - Write a zip file instead of a directory.
  */
-export async function createScenario(scenarioPath: string, outputPath: string, modules: SaveModule[]) {
-	if (await fs.access(outputPath).then(() => true, () => false)) {
+export async function createScenario(
+	scenarioPath: string,
+	outputPath: string,
+	modules: SaveModule[],
+	zip = false,
+) {
+	try {
+		await fs.stat(outputPath);
 		throw new Error(`${outputPath} already exists`);
+	} catch (err: any) {
+		if (err.code !== "ENOENT") {
+			throw err;
+		}
 	}
 
 	const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "clusterio-scenario-"));
@@ -37,7 +48,12 @@ export async function createScenario(scenarioPath: string, outputPath: string, m
 		}
 
 		await patch(tempPath, modules);
-		await extractZip(tempPath, outputPath);
+		if (zip) {
+			await fs.mkdir(path.dirname(outputPath), { recursive: true });
+			await fs.copyFile(tempPath, outputPath);
+		} else {
+			await extractZip(tempPath, outputPath);
+		}
 	} finally {
 		await fs.rm(tempDir, { recursive: true, force: true });
 	}
@@ -83,12 +99,18 @@ async function extractZip(zipPath: string, dirPath: string) {
 export function createScenarioCommand(yargs: any) {
 	yargs
 		.positional("output", {
-			describe: "Directory to write the scenario to",
+			describe: "Path to write the scenario to",
 			type: "string",
+		})
+		.option("zip", {
+			type: "boolean", nargs: 0, default: false,
+			describe: "Write the scenario as a zip file instead of a directory",
 		})
 		.option("scenario", {
 			nargs: 1,
-			describe: "Scenario directory, zipped scenario or save to patch, defaults to freeplay",
+			describe:
+				"Path to a scenario directory, zipped scenario or save to patch. " +
+				"Defaults to the freeplay scenario of the Factorio install in host.factorio_directory",
 			type: "string",
 		})
 		.option("factorio-version", {
@@ -144,6 +166,6 @@ export async function handleCreateScenarioCommand(
 
 	const modules = await loadModules(selected);
 	logger.info(`Patching ${scenarioPath} with modules ${[...modules.keys()].join(", ")}`);
-	await createScenario(scenarioPath, args.output as string, [...modules.values()]);
+	await createScenario(scenarioPath, args.output as string, [...modules.values()], Boolean(args.zip));
 	logger.info(`Created scenario ${args.output}`);
 }

@@ -80,9 +80,10 @@ Shows the value for a single config entry.
 
 ### `create-scenario <output>`
 
-Create a scenario with the Clusterio modules patched into it and write it to the `output` directory.
+Create a scenario with the Clusterio modules patched into it and write it to `output`.
 This is the same patching that is applied to saves when an instance starts, see docs/how-it-works.md in the main repository.
 The result can be used as a regular scenario outside of Clusterio by copying it to the `scenarios` folder of Factorio or into a mod.
+The IPC between the game and the host is not available outside of Clusterio, so modules that depend on it will not work as expected.
 
 By default the freeplay scenario from the latest Factorio install in `host.factorio_directory` is patched with the modules from all plugins that are enabled in the host config.
 
@@ -93,6 +94,9 @@ By default the freeplay scenario from the latest Factorio install in `host.facto
    Defaults to `latest`.
 
  * `--plugins <name>...` Only patch in modules from the given plugins.
+
+ * `--zip` Write the scenario as a zip file instead of a directory.
+   Factorio does not load zipped scenarios, extract it before use.
 
 For example, creating a scenario with only the inventory_sync module:
 
