@@ -44,11 +44,11 @@
 		"finalhandler": "^2.1.1",
 		"jsonwebtoken": "catalog:",
 		"jszip": "catalog:",
-		"semver": "^7.8.5",
+		"semver": "catalog:",
 		"winston": "catalog:",
 		"winston-daily-rotate-file": "catalog:",
 		"ws": "catalog:",
-		"yargs": "^18.1.0"
+		"yargs": "catalog:"
 	},
 	"devDependencies": {
 		"@clusterio/web_ui": "workspace:^",
@@ -59,9 +59,9 @@
 		"@types/finalhandler": "catalog:",
 		"@types/jsonwebtoken": "catalog:",
 		"@types/node": "catalog:",
-		"@types/semver": "^7.8.0",
+		"@types/semver": "catalog:",
 		"@types/ws": "catalog:",
-		"@types/yargs": "^17.0.35",
+		"@types/yargs": "catalog:",
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"react-router-dom": "catalog:",

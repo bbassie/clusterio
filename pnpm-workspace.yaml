@@ -13,8 +13,10 @@ catalog:
   '@types/jsonwebtoken': ^9.0.10
   '@types/node': ^24.13.4
   '@types/react': ^18.3.31
+  '@types/semver': ^7.8.0
   '@types/set-blocking': ^2.0.2
   '@types/ws': ^8.18.1
+  '@types/yargs': ^17.0.35
   antd: ^5.29.3
   chalk: ^6.0.0
   express: ^5.2.1
@@ -24,6 +26,7 @@ catalog:
   react-dom: ^18.2.0
   react-markdown: ^10.1.0
   react-router-dom: ^6.30.6
+  semver: ^7.8.5
   set-blocking: ^2.0.0
   typescript: ^5.9.3
   webpack: ^5.110.3
@@ -33,6 +36,7 @@ catalog:
   winston-daily-rotate-file: ^4.7.1
   winston-transport: ^4.9.0
   ws: ^8.21.3
+  yargs: ^18.1.0
 
 catalogMode: strict
 
