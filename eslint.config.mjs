@@ -148,6 +148,7 @@ export default defineConfig([{
 		"new-cap": ["error", {
 			"capIsNewExceptions": ["StringEnum", "StringKey"],
 			"capIsNewExceptionPattern": "^Type\\.",
+			"newIsCapExceptions": ["constructor"],
 		}],
 
 		"new-parens": "error",

@@ -349,7 +349,7 @@ export async function createProxyStream(app: Application): Promise<ProxyStream> 
 	return stream;
 }
 
-async function putStream(req: Request, res: Response) {
+async function putStream(req: Request<{ id: string }>, res: Response) {
 	const stream = req.app.locals.streams.get(req.params.id);
 	if (!stream || stream.source) {
 		res.sendStatus(404);
@@ -388,7 +388,7 @@ function startStream(res: Response, stream: ProxyStream) {
 	clearTimeout(stream.timeout);
 }
 
-async function getStream(req: Request, res: Response) {
+async function getStream(req: Request<{ id: string }>, res: Response) {
 	const stream = req.app.locals.streams.get(req.params.id);
 	if (!stream || stream.flowing) {
 		res.sendStatus(404);
@@ -695,8 +695,12 @@ export function addRouteHandlers(app: Application) {
 		validateHostToken,
 		(req:Request, res:Response, next:any) => uploadExport(req, res).catch(next)
 	);
-	app.put("/api/stream/:id", (req:Request, res:Response, next:any) => putStream(req, res).catch(next));
-	app.get("/api/stream/:id", (req:Request, res:Response, next:any) => getStream(req, res).catch(next));
+	app.put("/api/stream/:id",
+		(req:Request<{ id: string }>, res:Response, next:any) => putStream(req, res).catch(next)
+	);
+	app.get("/api/stream/:id",
+		(req:Request<{ id: string }>, res:Response, next:any) => getStream(req, res).catch(next)
+	);
 	app.post("/api/upload-save",
 		validateUserToken,
 		(req:Request, res:Response, next:any) => uploadSave(req, res).catch(next)

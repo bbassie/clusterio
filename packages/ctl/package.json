@@ -39,11 +39,11 @@
 		"@clusterio/lib": "workspace:^",
 		"as-table": "^1.0.55",
 		"winston": "catalog:",
-		"yargs": "^17.7.2"
+		"yargs": "^18.1.0"
 	},
 	"devDependencies": {
 		"@types/node": "catalog:",
-		"@types/yargs": "^17.0.33",
+		"@types/yargs": "^17.0.35",
 		"typescript": "catalog:"
 	}
 }

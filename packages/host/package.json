@@ -39,22 +39,22 @@
 	"dependencies": {
 		"@clusterio/lib": "workspace:^",
 		"@sinclair/typebox": "catalog:",
-		"jimp": "^1.6.0",
+		"jimp": "^1.6.1",
 		"jszip": "catalog:",
-		"pidusage": "^3.0.2",
+		"pidusage": "^4.0.1",
 		"rcon-client": "^4.2.5",
-		"semver": "^7.7.1",
+		"semver": "^7.8.5",
 		"set-blocking": "catalog:",
 		"winston": "catalog:",
 		"winston-daily-rotate-file": "catalog:",
-		"yargs": "^17.7.2"
+		"yargs": "^18.1.0"
 	},
 	"devDependencies": {
 		"@types/node": "catalog:",
-		"@types/pidusage": "^2.0.2",
-		"@types/semver": "^7.5.0",
+		"@types/pidusage": "^2.0.5",
+		"@types/semver": "^7.8.0",
 		"@types/set-blocking": "catalog:",
-		"@types/yargs": "^17.0.33",
+		"@types/yargs": "^17.0.35",
 		"typescript": "catalog:"
 	}
 }
