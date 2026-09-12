@@ -21,12 +21,12 @@ jobs:
         node-version: [24.x]
 
         # Supported factorio versions are latest stable and one minor version before stable (even if from a previous major) 
-        factorio-version: [1.1.110, 2.0.77, 2.1.8]
+        factorio-version: [1.1.110, 2.0.77, 2.1.17]
     
         # Coverage is performed on the older of the supported node versions
         include:
           - node-version: 22.x
-            factorio-version: 2.1.8
+            factorio-version: 2.1.17
             coverage: true
 
     steps:

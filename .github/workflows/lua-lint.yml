@@ -5,7 +5,7 @@ on:
   pull_request:
 
 env:
-  EMMYLUA_CHECK_VERSION: "0.24.0"
+  EMMYLUA_CHECK_VERSION: "0.25.1"
 
 jobs:
   lint:
