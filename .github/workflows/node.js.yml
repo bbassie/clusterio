@@ -31,13 +31,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
-    - uses: pnpm/action-setup@v6
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v7
+    - name: Prepare and install
+      uses: ./.github/actions/pnpm-install
       with:
         node-version: ${{ matrix.node-version }}
-    - name: Prepare and install
-      run: pnpm i --no-frozen-lockfile
     - name: Use Factorio ${{ matrix.factorio-version }}
       run: wget -q -O factorio.tar.gz https://www.factorio.com/get-download/${{ matrix.factorio-version }}/headless/linux64 && tar -xf factorio.tar.gz && rm factorio.tar.gz
     - name: Run tests
@@ -78,12 +75,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
-    - uses: pnpm/action-setup@v6
-    - uses: actions/setup-node@v7
+    - name: Prepare and install
+      uses: ./.github/actions/pnpm-install
       with:
         node-version: ${{ env.NODE_VERSION }}
-    - name: Prepare and install
-      run: pnpm i --no-frozen-lockfile
     - name: Build
       run: pnpm run build
     - name: Test ${{ matrix.controller }} controller with ${{ matrix.host }} host
@@ -98,11 +93,9 @@ jobs:
     timeout-minutes: 5
     steps:
     - uses: actions/checkout@v7
-    - uses: pnpm/action-setup@v6
-    - uses: actions/setup-node@v7
+    - uses: ./.github/actions/pnpm-install
       with:
         node-version: ${{ env.NODE_VERSION }}
-    - run: pnpm i --no-frozen-lockfile
     - run: pnpm run lint
 
   build:
@@ -110,11 +103,9 @@ jobs:
     timeout-minutes: 5
     steps:
     - uses: actions/checkout@v7
-    - uses: pnpm/action-setup@v6
-    - uses: actions/setup-node@v7
+    - uses: ./.github/actions/pnpm-install
       with:
         node-version: ${{ env.NODE_VERSION }}
-    - run: pnpm i --no-frozen-lockfile
     - run: pnpm run build-mod
     # Upload build to artifacts
     - name: Upload build to artifacts
