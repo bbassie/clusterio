@@ -30,10 +30,10 @@ jobs:
             coverage: true
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@v4
+    - uses: actions/checkout@v7
+    - uses: pnpm/action-setup@v6
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
         node-version: ${{ matrix.node-version }}
     - name: Prepare and install
@@ -48,13 +48,13 @@ jobs:
       run: pnpm run ci-cover
     - name: Upload coverage to Codecov
       if: ${{ matrix.coverage }}
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v7
       with:
         files: ./coverage/lcov.info
         token: ${{ secrets.CODECOV_TOKEN }}
     - name: Upload test logs for debugging
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: logs-${{ matrix.node-version }}-${{ matrix.factorio-version }}
         path: temp/test/logs
@@ -77,9 +77,9 @@ jobs:
             host: local
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@v4
-    - uses: actions/setup-node@v4
+    - uses: actions/checkout@v7
+    - uses: pnpm/action-setup@v6
+    - uses: actions/setup-node@v7
       with:
         node-version: ${{ env.NODE_VERSION }}
     - name: Prepare and install
@@ -97,9 +97,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@v4
-    - uses: actions/setup-node@v4
+    - uses: actions/checkout@v7
+    - uses: pnpm/action-setup@v6
+    - uses: actions/setup-node@v7
       with:
         node-version: ${{ env.NODE_VERSION }}
     - run: pnpm i --no-frozen-lockfile
@@ -109,16 +109,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@v4
-    - uses: actions/setup-node@v4
+    - uses: actions/checkout@v7
+    - uses: pnpm/action-setup@v6
+    - uses: actions/setup-node@v7
       with:
         node-version: ${{ env.NODE_VERSION }}
     - run: pnpm i --no-frozen-lockfile
     - run: pnpm run build-mod
     # Upload build to artifacts
     - name: Upload build to artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: clusterio_lib
         path: ./dist
