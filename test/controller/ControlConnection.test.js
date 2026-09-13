@@ -1,7 +1,40 @@
 import assert from "node:assert/strict";
-import { ControlConnection } from "@clusterio/controller";
+import * as lib from "@clusterio/lib";
+import { Controller, ControlConnection } from "@clusterio/controller";
 
 describe("controller/src/ControlConnection", function() {
+	describe(".handleDebugDumpWsRequest()", function() {
+		function makeConnection() {
+			const controllerConfig = new lib.ControllerConfig("controller");
+			const connector = new lib.VirtualConnector(
+				lib.Address.fromShorthand("controller"),
+				lib.Address.fromShorthand({ controlId: 1 }),
+			);
+			connector._socket = {};
+			const controller = new Controller(lib.logger, [], controllerConfig);
+			const user = controller.users.getOrCreateUser("test");
+			return new ControlConnection({ version: "2.0.0" }, connector, controller, user, 1);
+		}
+
+		it("re-applies clusterio_ignore_dump to the socket on resume", async function() {
+			const connection = makeConnection();
+			await connection.handleDebugDumpWsRequest(new lib.DebugDumpWsRequest());
+			// A resume installs a fresh socket without the flag.
+			const resumedSocket = {};
+			connection.connector._socket = resumedSocket;
+			connection.connector.emit("resume");
+			assert.equal(resumedSocket.clusterio_ignore_dump, true);
+		});
+
+		it("leaves the flag off on resume without a dumper", function() {
+			const connection = makeConnection();
+			const resumedSocket = {};
+			connection.connector._socket = resumedSocket;
+			connection.connector.emit("resume");
+			assert.equal(resumedSocket.clusterio_ignore_dump, false);
+		});
+	});
+
 	describe(".handleControllerRestartRequest()", function() {
 		let mockController;
 
