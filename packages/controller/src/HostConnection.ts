@@ -296,6 +296,23 @@ export default class HostConnection extends BaseConnection {
 	}
 
 	async handleInstanceSaveDetailsUpdatesEvent(event: lib.InstanceSaveDetailsUpdatesEvent) {
+		// A host may only report saves for instances assigned to it. Otherwise
+		// any host could inject save records for, or wipe the save list of, an
+		// instance on a different host. See handleInstanceStatusChangedEvent.
+		const assignedHere = (instanceId: number) => {
+			const instance = this._controller.instances.get(instanceId);
+			return instance !== undefined && instance.config.get("instance.assigned_host") === this.id;
+		};
+
+		if (event.instanceId !== undefined && !assignedHere(event.instanceId)) {
+			logger.warn(`Got bogus save updates for instance id ${event.instanceId}`);
+			return;
+		}
+		if (event.updates.some(save => !assignedHere(save.instanceId))) {
+			logger.warn(`Got bogus save updates from host id ${this.id}`);
+			return;
+		}
+
 		const updates: lib.SaveDetails[] = [];
 		const deletes: lib.SaveDetails[] = [];
 		for (const save of event.updates) {
