@@ -1405,7 +1405,19 @@ export class FactorioServer extends events.EventEmitter<FactorioServerEvents> {
 		// complete before the RCON connection can be used
 		if (!this._rconReady) {
 			// Not using events.once here to avoid throwing on error events.
-			await new Promise<void>(resolve => this.once("rcon-ready", resolve));
+			// The process may also exit before RCON connects.
+			await new Promise<void>(resolve => {
+				const onRconReady = () => {
+					this.off("exit", onExit);
+					resolve();
+				};
+				const onExit = () => {
+					this.off("rcon-ready", onRconReady);
+					resolve();
+				};
+				this.once("rcon-ready", onRconReady);
+				this.once("exit", onExit);
+			});
 		}
 
 		// The Factorio server may have decided to get ahead of us and

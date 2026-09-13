@@ -1,0 +1,62 @@
+import assert from "node:assert/strict";
+import events from "node:events";
+import path from "node:path";
+
+import { FactorioServer } from "@clusterio/host/dist/node/src/server.js";
+
+
+// Stand-in for the Factorio child process, only exit and kill are used here.
+class FakeProcess extends events.EventEmitter {
+	killed = false;
+	kill() {
+		this.killed = true;
+	}
+}
+
+function createStartedServer() {
+	const server = new FactorioServer(path.join("test", "file", "factorio"), path.join("temp", "test", "server"), {});
+	server._state = "running";
+	server._rconReady = false;
+	server._server = new FakeProcess();
+	server._watchExit();
+	return server;
+}
+
+// Fail instead of hanging if stop() never resolves.
+async function waitForStop(stopped) {
+	let timeoutId;
+	const timeout = new Promise((resolve, reject) => {
+		timeoutId = setTimeout(() => reject(new Error("stop() did not resolve")), 500);
+	});
+	try {
+		await Promise.race([stopped, timeout]);
+	} finally {
+		clearTimeout(timeoutId);
+	}
+}
+
+describe("host/src/server", function() {
+	describe("FactorioServer.stop()", function() {
+		it("returns if the process exits before RCON is ready", async function() {
+			const server = createStartedServer();
+			const stopped = server.stop();
+			server._server.emit("exit", 1, null);
+			await waitForStop(stopped);
+			assert.equal(server._state, "init");
+			assert.equal(server.listenerCount("rcon-ready"), 0);
+		});
+
+		it("stops the server if RCON becomes ready", async function() {
+			const server = createStartedServer();
+			const stopped = server.stop();
+			server._rconReady = true;
+			server.emit("rcon-ready");
+			await new Promise(resolve => setImmediate(resolve));
+			assert.equal(server.listenerCount("exit"), 0);
+			const fakeProcess = server._server;
+			assert.equal(fakeProcess.killed, true);
+			fakeProcess.emit("exit", 0, null);
+			await waitForStop(stopped);
+		});
+	});
+});
