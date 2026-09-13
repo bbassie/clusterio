@@ -4,7 +4,7 @@ import path from "node:path";
 import * as lib from "@clusterio/lib";
 import { PlayerStats, wait } from "@clusterio/lib";
 import Instance from "@clusterio/host/dist/node/src/Instance.js";
-import { MockConnector, MockServer } from "../mock.js";
+import { MockConnector, MockLogger, MockServer } from "../mock.js";
 
 const addr = lib.Address.fromShorthand;
 
@@ -35,6 +35,56 @@ describe("class Instance", function() {
 		});
 		it("should join path with arguments", function() {
 			assert.equal(instance.path("bar"), path.join("dir", "bar"));
+		});
+	});
+
+	describe("config fieldChanged", function() {
+		let errors;
+		let rejections;
+		let hookInvoked;
+		function onRejection(err) { rejections.push(err); }
+		beforeEach(function() {
+			errors = [];
+			rejections = [];
+			instance.logger = new MockLogger();
+			instance.logger.error = message => errors.push(message);
+			instance.server.exampleSettings = async () => ({});
+			hookInvoked = new Promise(resolve => {
+				instance.hooks.instanceConfigFieldChanged.attach("test", field => resolve(field));
+			});
+			process.on("unhandledRejection", onRejection);
+		});
+		afterEach(function() {
+			process.off("unhandledRejection", onRejection);
+		});
+
+		it("should log whitelist update errors and invoke the hook", async function() {
+			instance.server.sendRcon = async () => { throw new Error("Expected state running,stopping"); };
+			instance.config.set("factorio.enable_whitelist", true);
+			assert.equal(await hookInvoked, "factorio.enable_whitelist");
+			await wait(10);
+			assert.deepEqual(rejections, []);
+			assert.equal(errors.length, 1);
+			assert.match(errors[0], /^Error updating whitelist:\nError: Expected state running,stopping/);
+		});
+
+		it("should log server settings update errors and invoke the hook", async function() {
+			instance.server.exampleSettings = async () => { throw new Error("no example settings"); };
+			instance.config.set("factorio.settings", { name: "bar" });
+			assert.equal(await hookInvoked, "factorio.settings");
+			await wait(10);
+			assert.deepEqual(rejections, []);
+			assert.equal(errors.length, 1);
+			assert.match(errors[0], /^Error updating server settings:\nError: no example settings/);
+		});
+
+		it("should apply tags with non-string elements", async function() {
+			instance.config.set("factorio.settings", { tags: [1, "a b"] });
+			await hookInvoked;
+			await wait(10);
+			assert.deepEqual(rejections, []);
+			assert.deepEqual(errors, []);
+			assert.deepEqual(instance.server.rconCommands, ["/config set tags 1 a b"]);
 		});
 	});
 

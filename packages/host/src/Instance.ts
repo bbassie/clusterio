@@ -61,7 +61,7 @@ function applyAsConfig(name: string) {
 			// Replace spaces with non-break spaces and delimit by spaces.
 			// This does change the defined tags, but there doesn't seem to
 			// be a way to include a space into a tag from the console.
-			value = value.map(tag => tag.replace(/ /g, "\u00a0")).join(" ");
+			value = value.map(tag => String(tag).replace(/ /g, "\u00a0")).join(" ");
 		}
 		try {
 			await instance.sendRcon(`/config set ${name} ${value}`);
@@ -199,9 +199,13 @@ export default class Instance extends lib.Link {
 			if (field === "factorio.shutdown_timeout") {
 				this.server.shutdownTimeoutMs = curr as number * 1000;
 			} else if (field === "factorio.settings") {
-				this.updateFactorioSettings(curr as any, prev as any).finally(hook);
+				this.updateFactorioSettings(curr as any, prev as any).catch(err => {
+					this.logger.error(`Error updating server settings:\n${err.stack}`);
+				}).finally(hook);
 			} else if (field === "factorio.enable_whitelist") {
-				this.updateFactorioWhitelist(curr as any).finally(hook);
+				this.updateFactorioWhitelist(curr as any).catch(err => {
+					this.logger.error(`Error updating whitelist:\n${err.stack}`);
+				}).finally(hook);
 			} else {
 				if (field === "factorio.max_concurrent_commands") {
 					this.server.maxConcurrentCommands = curr as number;
