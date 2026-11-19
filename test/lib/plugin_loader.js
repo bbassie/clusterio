@@ -16,6 +16,7 @@ describe("lib/plugin_loader", function() {
 		let testPlugin = path.join(baseDir, "test_plugin");
 		let brokenPlugin = path.join(baseDir, "broken_plugin");
 		let invalidPlugin = path.join(baseDir, "invalid_plugin");
+		let badModsPlugin = path.join(baseDir, "bad_mods_plugin");
 		before(async function() {
 			async function writePlugin(pluginPath, infoName) {
 				await fs.mkdir(pluginPath, { recursive: true });
@@ -33,6 +34,11 @@ describe("lib/plugin_loader", function() {
 			await writePlugin(brokenPlugin, "broken");
 			await fs.writeFile(path.join(brokenPlugin, "index.js"), "Syntax Error");
 			await writePlugin(invalidPlugin, "wrong");
+			await writePlugin(badModsPlugin, "bad_mods");
+			await fs.writeFile(
+				path.join(badModsPlugin, "index.js"),
+				'export const plugin = { name: "bad_mods", requiredMods: ["? frobber"] };',
+			);
 		});
 
 		it("should ignore missing plugins", async function() {
@@ -73,6 +79,12 @@ describe("lib/plugin_loader", function() {
 			await assert.rejects(
 				lib.loadPluginInfos(new Map([["broken", path.resolve(brokenPlugin)]])),
 				{ message: `PluginError: ${brokenMessage}` }
+			);
+		});
+		it("should reject a plugin with invalid requiredMods", async function() {
+			await assert.rejects(
+				lib.loadPluginInfos(new Map([["bad_mods", path.resolve(badModsPlugin)]])),
+				err => err instanceof lib.PluginError && err.pluginName === "bad_mods",
 			);
 		});
 		describe("plugin installed from npm", function() {

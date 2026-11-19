@@ -343,10 +343,81 @@ describe("controller/src/Controller", function() {
 				assert.deepEqual(downloadCalls, []);
 			});
 
+			it("should continue past mods that could not be resolved", async function() {
+				ctrl.resolveModDependencies = async () => new lib.ModDependencyResolveRequest.Response(
+					resolved, new Map([["base", "notFound"], ["gone_mod", "notFound"]]),
+				);
+				await ctrl.downloadRequiredMods();
+				assert.equal(downloadCalls.length, 1);
+			});
+
 			it("should do nothing when no plugin requires mods", async function() {
 				ctrl.pluginInfos = [{ name: "bar", title: "Bar" }];
 				await ctrl.downloadRequiredMods();
 				assert.deepEqual(resolveCalls, []);
+			});
+		});
+		describe(".downloadModsFromPortal()", function() {
+			let ctrl, config, downloads;
+			const mods = [{ name: "foo_mod", version: new lib.ModVersionEquality("=", "1.0.0") }];
+			beforeEach(function() {
+				config = new ControllerConfig("controller", { "controller.version": controllerVersion });
+				config.set("controller.factorio_username", "user");
+				config.set("controller.factorio_token", "token");
+				ctrl = new Controller({}, [], config);
+				downloads = [];
+				ctrl.modStore.downloadMods = async (...args) => { downloads.push(args); };
+			});
+
+			it("should download mods missing from the mod store", async function() {
+				await ctrl.downloadModsFromPortal(mods, "2.0");
+				assert.deepEqual(downloads, [[mods, "user", "token", "2.0"]]);
+			});
+
+			it("should skip mods already in the mod store", async function() {
+				const info = lib.ModInfo.fromJSON({ name: "foo_mod", version: "1.0.0", factorio_version: "2.0" });
+				ctrl.modStore = new lib.ModStore("mods", new Map([[info.filename, info]]));
+				ctrl.modStore.downloadMods = async () => { throw new Error("should not download"); };
+				await ctrl.downloadModsFromPortal(mods, "2.0");
+			});
+
+			it("should require Factorio credentials", async function() {
+				config.set("controller.factorio_token", "");
+				await assert.rejects(ctrl.downloadModsFromPortal(mods, "2.0"), ConflictError);
+				assert.deepEqual(downloads, []);
+			});
+
+			it("should map portal errors to request errors", async function() {
+				for (const [message, errorClass] of [
+					["401 Unauthorized", ConflictError],
+					["404 Not Found", NotFoundError],
+					["socket hang up", lib.InternalServerError],
+				]) {
+					ctrl.modStore.downloadMods = async () => { throw new Error(message); };
+					await assert.rejects(ctrl.downloadModsFromPortal(mods, "2.0"), errorClass);
+				}
+			});
+		});
+
+		describe(".resolveModDependencies()", function() {
+			it("should report portal releases with invalid dependencies", async function() {
+				const ctrl = new Controller({}, [], new ControllerConfig("controller", {
+					"controller.version": controllerVersion,
+				}));
+				const fetchModReleases = lib.ModStore.fetchModReleases;
+				lib.ModStore.fetchModReleases = async (name) => ({
+					name, owner: "someone", title: name, releases: [{
+						version: "1.0.0", sha1: "0", download_url: "", file_name: `${name}_1.0.0.zip`,
+						released_at: "2020-01-01T00:00:00Z",
+						info_json: { factorio_version: "2.0", dependencies: ["bad >= 1..0"] },
+					}],
+				});
+				try {
+					const { errors } = await ctrl.resolveModDependencies([new lib.ModDependency("foo_mod")], "2.0");
+					assert.equal(errors.get("foo_mod"), "invalidDependency");
+				} finally {
+					lib.ModStore.fetchModReleases = fetchModReleases;
+				}
 			});
 		});
 		describe(".loggableHeaders()", function() {
